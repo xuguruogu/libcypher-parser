@@ -18,7 +18,10 @@ find_package_handle_standard_args (CHECK DEFAULT_MSG CHECK_LIBRARY CHECK_INCLUDE
 
 # Copy the results to the output variables.
 if (CHECK_FOUND)
-    set (CHECK_LIBRARIES ${CHECK_LIBRARY} ${COMPAT_LIBRARY})
+    set (CHECK_LIBRARIES ${CHECK_LIBRARY})
+    if (COMPAT_FOUND)
+        list(APPEND CHECK_LIBRARIES ${COMPAT_LIBRARY})
+    endif (COMPAT_FOUND)
     set (CHECK_INCLUDE_DIRS ${CHECK_INCLUDE_DIR})
 else (CHECK_FOUND)
     set (CHECK_LIBRARIES)

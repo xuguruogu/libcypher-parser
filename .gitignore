@@ -50,3 +50,6 @@ TAGS
 /libtool
 /libcypher-parser-*.tar.gz
 /linter/src/cypher-lint
+
+.idea/
+cmake-build-*

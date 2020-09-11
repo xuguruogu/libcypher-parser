@@ -2,6 +2,9 @@ cmake_minimum_required (VERSION 3.5)
 
 project (libcypher-parser C)
 
+set(CMAKE_COLOR_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 set (MODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.cmake/Modules")
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MODULE_DIR})
 
@@ -65,10 +68,37 @@ if (CC_HAVE_VISIBILITY)
   set (VISI_C_FLAGS "-fvisibility=hidden")
 endif (CC_HAVE_VISIBILITY)
 
-find_package (check)
-find_package (fmem)
-find_package (leg)
-find_package (getopt)
+find_package (LEG REQUIRED)
+find_package (CHECK REQUIRED)
+find_package (GETOPT)
+find_package (FMEM)
+
+function (GEN_LEG)
+  set (one_value_args TARGET VAR IN_FILE OUT_FILE)
+  cmake_parse_arguments (args "" "${one_value_args}" "" ${ARGN})
+  get_filename_component (out_dir ${args_OUT_FILE} DIRECTORY)
+  add_custom_command (
+          DEPENDS ${args_IN_FILE}
+          OUTPUT ${args_OUT_FILE}
+          PRE_BUILD
+          COMMAND ${CMAKE_COMMAND} -E make_directory ${out_dir}
+          COMMAND ${LEG_PROGRAMS} ${args_IN_FILE} > ${args_OUT_FILE})
+
+  add_custom_target (${args_TARGET} DEPENDS ${args_OUT_FILE})
+
+  set (${args_VAR} ${args_OUT_FILE} PARENT_SCOPE)
+endfunction ()
+
+if (LEG_FOUND)
+  GEN_LEG(TARGET libcypher-parser-leg
+          VAR libcypher-parser-leg-file
+          IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/parser.leg
+          OUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/parser_leg.c)
+  GEN_LEG(TARGET libcypher-quick-parser-leg
+          VAR libcypher-quick-parser-leg-file
+          IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/quick_parser.leg
+          OUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/quick_parser_leg.c)
+endif (LEG_FOUND)
 
 list (APPEND CMAKE_REQUIRED_DEFINITIONS
   -D_GNU_SOURCE
@@ -77,8 +107,9 @@ list (APPEND CMAKE_REQUIRED_DEFINITIONS
   -DWIN32_LEAN_AND_MEAN)
 
 extract_make_variable (lib/src/Makefile.am libcypher_parser_la_SOURCES SOURCES lib/src/)
-add_library (libcypher-parser ${SOURCES})
-target_compile_options (libcypher-parser PUBLIC /wd4267 /wd4244 /wd4047)
+add_library (libcypher-parser STATIC ${SOURCES})
+add_dependencies(libcypher-parser libcypher-parser-leg libcypher-quick-parser-leg)
+target_link_libraries(libcypher-parser m)
 
 extract_make_variable (lib/test/Makefile.am check_libcypher_parser_CHECKS CHECKS lib/test/)
 extract_make_variable (lib/test/Makefile.am check_libcypher_parser_SOURCES TESTS lib/test/)
@@ -98,30 +129,23 @@ list (JOIN add_cases ";\n    " add_cases)
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/.cmake/check_libcypher-parser_suite.c.in 
                 ${CMAKE_CURRENT_SOURCE_DIR}/lib/test/check_libcypher-parser_suite.c)
 
-add_executable (tests ${TESTS})
-target_link_libraries (tests libcypher-parser)
+add_executable (libcypher-parser-tests ${TESTS})
+target_link_libraries (libcypher-parser-tests libcypher-parser)
 
 list (APPEND LINTER "linter/src/cypher-lint.c")
 add_executable (cypher-linter ${LINTER})
+target_include_directories (cypher-linter PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/src/)
 target_link_libraries (cypher-linter libcypher-parser)
 
-if (LEG_FOUND)
-    add_custom_command (
-        TARGET libcypher-parser
-        PRE_BUILD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/src
-        COMMAND ${LEG_PROGRAMS} parser.leg > parser_leg.c)
-    add_custom_command (
-        TARGET libcypher-parser
-        PRE_BUILD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/src
-        COMMAND ${LEG_PROGRAMS} quick_parser.leg > quick_parser_leg.c)
-endif (LEG_FOUND)
+if (CHECK_FOUND)
+  target_include_directories (libcypher-parser-tests PUBLIC ${CHECK_INCLUDE_DIRS} ${CHECK_INCLUDE_DIRS}/..)
+  target_link_libraries (libcypher-parser-tests ${CHECK_LIBRARIES} rt)
+endif (CHECK_FOUND)
 
-if (CHECK_FOUND AND FMEM_FOUND)
-  target_include_directories (tests PUBLIC ${FMEM_INCLUDE_DIRS} ${CHECK_INCLUDE_DIRS} ${CHECK_INCLUDE_DIRS}/..)
-  target_link_libraries (tests ${CHECK_LIBRARIES} ${FMEM_LIBRARIES})
-endif (CHECK_FOUND AND FMEM_FOUND)
+if (FMEM_FOUND)
+  target_include_directories (libcypher-parser-tests PUBLIC ${CHECK_INCLUDE_DIRS}/..)
+  target_link_libraries (libcypher-parser-tests ${FMEM_LIBRARIES})
+endif (FMEM_FOUND)
 
 if (GETOPT_FOUND)
   target_include_directories (cypher-linter PUBLIC ${GETOPT_INCLUDE_DIRS} "lib/src/")
@@ -132,7 +156,10 @@ if (HAVE_PTHREADS)
   target_link_libraries (libcypher-parser ${CMAKE_THREAD_LIBS_INIT})
 endif (HAVE_PTHREADS)
 
-install (TARGETS libcypher-parser tests
+install (TARGETS libcypher-parser libcypher-parser-tests
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+enable_testing()
+add_test(libcypher-parser-tests libcypher-parser-tests)

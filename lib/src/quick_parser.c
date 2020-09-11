@@ -24,6 +24,12 @@
 
 DECLARE_VECTOR(offsets, unsigned int, 0);
 
+#if defined(__has_warning)
+#if __has_warning("-Wunused-parameter")
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+#endif
+
 typedef struct _yycontext yycontext;
 typedef int (*yyrule)(yycontext *yy);
 typedef int (*source_cb_t)(void *data, char *buf, int n);

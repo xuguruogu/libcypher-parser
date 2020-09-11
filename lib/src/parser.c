@@ -29,6 +29,12 @@
 #include <ctype.h>
 #include <setjmp.h>
 
+#if defined(__has_warning)
+#if __has_warning("-Wunused-parameter")
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+#endif
+
 DECLARE_VECTOR(offsets, unsigned int, 0);
 DECLARE_VECTOR(precedences, unsigned int, 0);
 DECLARE_VECTOR(operators, const cypher_operator_t *, NULL);
