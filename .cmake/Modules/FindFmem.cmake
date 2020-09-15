@@ -1,27 +1,23 @@
 # - Find fmem
 # Find the native fmem headers and libraries.
 #
-# FMEM_INCLUDE_DIRS	- where to find fmem.h, etc.
-# FMEM_LIBRARIES	- List of libraries when using fmem.
-# FMEM_FOUND	- True if fmem has been found.
+# fmem_INCLUDE_DIRS	- where to find fmem.h, etc.
+# fmem_LIBRARIES	- List of libraries when using fmem.
+# fmem_FOUND	- True if fmem has been found.
 
-# Look for the header file.
-find_path (FMEM_INCLUDE_DIR fmem.h)
+find_path(fmem_INCLUDE_DIRS fmem.h)
+find_library(fmem_LIBRARIES NAMES libfmem.a)
 
-# Look for the library.
-find_library (FMEM_LIBRARY NAMES fmem)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(fmem DEFAULT_MSG fmem_LIBRARIES fmem_INCLUDE_DIRS)
 
-# Handle the QUIETLY and REQUIRED arguments and set FMEM_FOUND to TRUE if all listed variables are TRUE.
-include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (FMEM DEFAULT_MSG FMEM_LIBRARY FMEM_INCLUDE_DIR)
+mark_as_advanced(fmem_INCLUDE_DIRS fmem_LIBRARIES)
 
-# Copy the results to the output variables.
-if (FMEM_FOUND)
-    set (FMEM_LIBRARIES ${FMEM_LIBRARY})
-    set (FMEM_INCLUDE_DIRS ${FMEM_INCLUDE_DIR})
-else (FMEM_FOUND)
-    set (FMEM_LIBRARIES)
-    set (FMEM_INCLUDE_DIRS)
-endif (FMEM_FOUND)
+if(fmem_FOUND)
+    add_library(fmem::fmem UNKNOWN IMPORTED)
 
-mark_as_advanced (FMEM_INCLUDE_DIRS FMEM_LIBRARIES)
+    set_target_properties(fmem::fmem
+            PROPERTIES
+            IMPORTED_LOCATION ${fmem_LIBRARIES}
+            INTERFACE_INCLUDE_DIRECTORIES ${fmem_INCLUDE_DIRS})
+endif(fmem_FOUND)

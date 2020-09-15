@@ -1,27 +1,24 @@
 # - Find getopt
 # Find the native getopt headers and libraries.
 #
-# GETOPT_INCLUDE_DIRS	- where to find getopt.h, etc.
-# GETOPT_LIBRARIES	- List of libraries when using getopt.
-# GETOPT_FOUND	- True if getopt has been found.
+# getopt_INCLUDE_DIRS	- where to find getopt.h, etc.
+# getopt_LIBRARIES	- List of libraries when using getopt.
+# getopt_FOUND	- True if getopt has been found.
 
-# Look for the header file.
-find_path (GETOPT_INCLUDE_DIR getopt.h)
+find_path(getopt_INCLUDE_DIRS getopt.h)
+find_library(getopt_LIBRARIES NAMES libwingetopt.a)
 
-# Look for the library.
-find_library (GETOPT_LIBRARY NAMES wingetopt)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(getopt DEFAULT_MSG getopt_LIBRARIES getopt_INCLUDE_DIRS)
 
-# Handle the QUIETLY and REQUIRED arguments and set GETOPT_FOUND to TRUE if all listed variables are TRUE.
-include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (GETOPT DEFAULT_MSG GETOPT_LIBRARY GETOPT_INCLUDE_DIR)
+mark_as_advanced(getopt_INCLUDE_DIRS getopt_LIBRARIES)
 
-# Copy the results to the output variables.
-if (GETOPT_FOUND)
-    set (GETOPT_LIBRARIES ${GETOPT_LIBRARY})
-    set (GETOPT_INCLUDE_DIRS ${GETOPT_INCLUDE_DIR})
-else (GETOPT_FOUND)
-    set (GETOPT_LIBRARIES)
-    set (GETOPT_INCLUDE_DIRS)
-endif (GETOPT_FOUND)
+if(getopt_FOUND)
+    add_library(getopt::getopt UNKNOWN IMPORTED)
 
-mark_as_advanced (GETOPT_INCLUDE_DIRS GETOPT_LIBRARIES)
+    set_target_properties(getopt::getopt
+            PROPERTIES
+            IMPORTED_LOCATION ${getopt_LIBRARIES}
+            INTERFACE_INCLUDE_DIRECTORIES ${getopt_INCLUDE_DIRS})
+endif(getopt_FOUND)
+

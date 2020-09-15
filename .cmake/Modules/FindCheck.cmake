@@ -1,31 +1,25 @@
 # - Find check
 # Find the native check headers and libraries.
 #
-# CHECK_INCLUDE_DIRS	- where to find check.h, etc.
-# CHECK_LIBRARIES	- List of libraries when using check.
-# CHECK_FOUND	- True if check has been found.
+# check_INCLUDE_DIRS	- where to find check.h, etc.
+# check_LIBRARIES	- List of libraries when using check.
+# check_FOUND	- True if check has been found.
 
-# Look for the header file.
-find_path (CHECK_INCLUDE_DIR check.h)
+find_path(check_INCLUDE_DIRS check.h)
+find_library(check_LIBRARIES NAMES libcheck.a)
 
-# Look for the library.
-find_library (CHECK_LIBRARY NAMES check)
-find_library (COMPAT_LIBRARY NAMES compat)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(check DEFAULT_MSG check_LIBRARIES check_INCLUDE_DIRS)
 
-# Handle the QUIETLY and REQUIRED arguments and set CHECK_FOUND to TRUE if all listed variables are TRUE.
-include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (CHECK DEFAULT_MSG CHECK_LIBRARY CHECK_INCLUDE_DIR)
+list(APPEND check_LIBRARIES)
 
-# Copy the results to the output variables.
-if (CHECK_FOUND)
-    set (CHECK_LIBRARIES ${CHECK_LIBRARY})
-    if (COMPAT_FOUND)
-        list(APPEND CHECK_LIBRARIES ${COMPAT_LIBRARY})
-    endif (COMPAT_FOUND)
-    set (CHECK_INCLUDE_DIRS ${CHECK_INCLUDE_DIR})
-else (CHECK_FOUND)
-    set (CHECK_LIBRARIES)
-    set (CHECK_INCLUDE_DIRS)
-endif (CHECK_FOUND)
+mark_as_advanced(check_INCLUDE_DIRS check_LIBRARIES)
 
-mark_as_advanced (CHECK_INCLUDE_DIRS CHECK_LIBRARIES)
+if(check_FOUND)
+    add_library(check::check UNKNOWN IMPORTED)
+
+    set_target_properties(check::check
+            PROPERTIES
+            IMPORTED_LOCATION ${check_LIBRARIES}
+            INTERFACE_INCLUDE_DIRECTORIES ${check_INCLUDE_DIRS})
+endif(check_FOUND)
